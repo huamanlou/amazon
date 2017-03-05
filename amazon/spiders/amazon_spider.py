@@ -42,7 +42,7 @@ class MysqlDo:
 
 class AmazonSpider(scrapy.Spider):
     name = 'amazon'
-    allowed_domians = ['ip.cn']
+    allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
     start_urls = [
         'https://www.amazon.com/dp/B01KLSMWVA/'
