@@ -1,5 +1,74 @@
+# -*- coding: utf-8 -*-
+import MySQLdb
 import scrapy
+import time
+import json
 from amazon.items import AmazonItem
+
+
+
+class MysqlDo:
+    host = 'localhost'
+    user = 'amazon'
+    passwd = 'Amazon123!@#'
+    db = 'amazon'
+    charset = 'utf8'
+    conn = ''
+    def __init__(self):
+        self.conn = MySQLdb.connect(host=self.host, user=self.user, passwd=self.passwd, db=self.db, charset=self.charset)
+
+    def close_conn(self):
+        self.conn.close()
+
+    def select_asin(self, asin):
+        cursor = self.conn.cursor()
+        cursor.execute("select * from t_asin where asin= '%s'" % (asin))
+        row = cursor.fetchall()
+        # self.conn.close()
+        return len(row)
+
+    def insert_asin(self, asin):
+        cursor = self.conn.cursor()
+        ctime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        sql = "insert into t_asin(asin,ctime, status) value ('%s', '%s', '%d')"
+        try:
+            cursor.execute(sql % (asin,ctime,1))
+            self.conn.commit()
+        except:
+
+            self.conn.close()
+
+
+
+class AmazonSpider(scrapy.Spider):
+    name = 'amazon'
+    allowed_domians = ['amazon.com']
+    base_url = 'http://www.amazon.com/dp/'
+    start_urls = [
+        'https://www.amazon.com/dp/B0163GNS5S'
+    ]
+
+    def parse(self, response):
+        selector = response.selector
+        #页面抓取相关产品json数据包
+        sim_feature = selector.css('div[id="purchase-sims-feature"]')
+        products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
+        products_data = json.loads(products_data)
+        # print(products_data)
+        asin_list = products_data['ajax']['id_list']
+
+        #循环读取asin，查询数据库，若不存在，则插入数据库
+        mysql_do = MysqlDo()
+        for asin in asin_list:
+            row = mysql_do.select_asin(asin)
+            if row<1:
+                mysql_do.insert_asin(asin)
+                #入库后，将新的asin，重新开启爬虫进程
+                product_url = self.base_url + asin
+                yield scrapy.Request(product_url, callback=self.parse)
+
+
+        mysql_do.close_conn()
 
 '''
 class AmazonSpider(scrapy.Spider):
@@ -21,7 +90,6 @@ class AmazonSpider(scrapy.Spider):
         stars = selector.css('.a-declarative .a-icon-alt::text').extract_first().strip()
         price = selector.css('span[id="priceblock_saleprice"]::text').extract_first().strip()
 
-
         # print('+++++++++')
         # print(title)
         # print(reviews)
@@ -36,7 +104,7 @@ class AmazonSpider(scrapy.Spider):
         item['price'] = price
 
         yield item
-'''
+
 
 class AmazonSpider(scrapy.Spider):
     name = 'amazon'
@@ -77,3 +145,5 @@ class AmazonSpider(scrapy.Spider):
             page_url = self.base_url + next_pages[0].extract()
             print(page_url)
             yield scrapy.Request(page_url, callback=self.parse)
+
+'''
