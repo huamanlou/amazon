@@ -96,3 +96,5 @@ DOWNLOADER_MIDDLEWARES = {
 #FEED_FORMAT = 'csv'
 #FEED_URI = u'file:///D://amazon.csv'
 
+RETRY_TIMES = 10
+

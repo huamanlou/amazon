@@ -49,8 +49,6 @@ class AmazonSpider(scrapy.Spider):
     ]
 
     def parse(self, response):
-        print (response.body)
-        return
         selector = response.selector
         #页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
