@@ -11,7 +11,7 @@ class MysqlDo:
     host = 'localhost'
     user = 'amazon'
     passwd = 'Amazon123!@#'
-    db = 'amazon'
+    db = 'amazon_us'
     charset = 'utf8'
     conn = ''
     def __init__(self):
