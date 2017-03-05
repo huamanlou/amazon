@@ -3,14 +3,6 @@ from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 
 
 class RotateUserAgentMiddleware(UserAgentMiddleware):
-    def __init__(self, user_agent=''):
-        self.user_agent = user_agent
-
-    def process_request(self, request, spider):
-        ua = random.choice(self.user_agent_list)
-        if ua:
-            request.headers.setdefault('User-Agent', ua)
-
     # the default user_agent_list composes chrome,I E,firefox,Mozilla,opera,netscape
     user_agent_list = [
         "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
@@ -33,3 +25,23 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
         "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11",
         "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; .NET4.0C; .NET4.0E; .NET CLR 2.0.50727; .NET CLR 3.0.30729; .NET CLR 3.5.30729; InfoPath.3; rv:11.0) like Gecko",
     ]
+
+    proxy_file = u'file:///D://proxy.txt'
+    proxies = []
+
+    def __init__(self, user_agent=''):
+        self.user_agent = user_agent
+
+    def process_request(self, request, spider):
+        ua = random.choice(self.user_agent_list)
+        if ua:
+            request.headers.setdefault('User-Agent', ua)
+
+        with open('proxy.txt') as f:
+            self.proxies = [ip.strip() for ip in f]
+
+        proxy = 'http://{}'.format(random.choice(self.proxies))
+        print('=============')
+        print(proxy)
+        print('xxxxxxxxxxxxx')
+        request.meta['proxy'] = proxy

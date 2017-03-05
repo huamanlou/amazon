@@ -42,21 +42,21 @@ class MysqlDo:
 
 class AmazonSpider(scrapy.Spider):
     name = 'amazon'
-    allowed_domians = ['amazon.com']
+    allowed_domians = ['ip.cn']
     base_url = 'http://www.amazon.com/dp/'
     start_urls = [
-        'https://www.amazon.com/dp/B01G48RH20'
+        'http://www.ip.cn/'
     ]
 
     def parse(self, response):
+        print (response.body)
+        return
         selector = response.selector
         #页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
         products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
         products_data = json.loads(products_data)
-        # print(products_data)
         asin_list = products_data['ajax']['id_list']
-
         #循环读取asin，查询数据库，若不存在，则插入数据库
         mysql_do = MysqlDo()
         for asin in asin_list:
