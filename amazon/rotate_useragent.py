@@ -26,7 +26,7 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
         "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; .NET4.0C; .NET4.0E; .NET CLR 2.0.50727; .NET CLR 3.0.30729; .NET CLR 3.5.30729; InfoPath.3; rv:11.0) like Gecko",
     ]
 
-    proxy_file = u'file:///D://proxy.txt'
+    proxy_file = 'proxy.txt'
     proxies = []
 
     def __init__(self, user_agent=''):
@@ -37,7 +37,7 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
         if ua:
             request.headers.setdefault('User-Agent', ua)
 
-        with open('proxy.txt') as f:
+        with open(self.proxy_file) as f:
             self.proxies = [ip.strip() for ip in f]
 
         proxy = 'http://{}'.format(random.choice(self.proxies))
