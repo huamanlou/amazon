@@ -45,7 +45,7 @@ class AmazonSpider(scrapy.Spider):
     allowed_domians = ['ip.cn']
     base_url = 'http://www.amazon.com/dp/'
     start_urls = [
-        'http://www.ip.cn/'
+        'https://www.amazon.com/dp/B01KLSMWVA/'
     ]
 
     def parse(self, response):
