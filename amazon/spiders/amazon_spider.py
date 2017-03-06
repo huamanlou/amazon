@@ -39,7 +39,7 @@ class MysqlDo:
 
     def select_scrapy(self):
         cursor = self.conn.cursor()
-        date = time.strftime('%Y-%m-%dS', time.localtime(time.time()))
+        date = time.strftime('%Y%m%dS', time.localtime(time.time()))
         cursor.execute("select asin from t_scrapy where date='%s' and status=0" % (date))
         row = cursor.fetchone()
         if row == None:
@@ -54,6 +54,15 @@ class MysqlDo:
         self.conn.commit()
 
         return asin
+
+    def update_scrapy(self,asin):
+        cursor = self.conn.cursor()
+        #更新状态
+        sql = "update t_scrapy set status = 2 where asin = '%s'" % (asin)
+        # 执行SQL语句
+        cursor.execute(sql)
+        # 提交到数据库执行
+        self.conn.commit()
 
 
 class AmazonSpider(scrapy.Spider):
@@ -91,7 +100,8 @@ class AmazonSpider(scrapy.Spider):
         # 标题
         item['title'] = selector.css('span[id="productTitle"]::text').extract_first().strip()
         # asin
-        item['asin'] = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+        asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+        item['asin'] = asin
         # 品牌名称
         brand = selector.css('a[id="brand"]::text').extract_first()
         if brand:
@@ -134,6 +144,8 @@ class AmazonSpider(scrapy.Spider):
         # print('===========')
 
         yield item
+        #修改状态
+        mysql_do.update_scrapy(asin)
 
         #开始读取下一个asin,并继续爬
         asin = mysql_do.select_scrapy()
