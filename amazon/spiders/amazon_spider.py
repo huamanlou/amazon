@@ -11,6 +11,8 @@ class MysqlDo:
     host = 'localhost'
     user = 'amazon'
     passwd = 'Amazon123!@#'
+    # user = 'root'
+    # passwd = 'fuck2013'
     db = 'amazon_us'
     charset = 'utf8'
     conn = ''
@@ -64,6 +66,8 @@ class AmazonSpider(scrapy.Spider):
         # 从db取出一个asin进行爬取
         mysql_do = MysqlDo()
         asin = mysql_do.select_scrapy()
+        print('=====')
+        print(asin)
         init_url = self.base_url + asin
         self.start_urls.append(init_url)
 
