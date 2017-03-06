@@ -86,14 +86,16 @@ class AmazonSpider(scrapy.Spider):
         # 页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
         products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
-        products_data = json.loads(products_data)
-        asin_list = products_data['ajax']['id_list']
-        # 循环读取asin，查询数据库，若不存在，则插入数据库
-        mysql_do = MysqlDo()
-        for asin in asin_list:
-            row = mysql_do.select_asin(asin)
-            if row < 1:
-                mysql_do.insert_asin(asin)
+        print(products_data)
+        if products_data:
+            products_data = json.loads(products_data)
+            asin_list = products_data['ajax']['id_list']
+            # 循环读取asin，查询数据库，若不存在，则插入数据库
+            mysql_do = MysqlDo()
+            for asin in asin_list:
+                row = mysql_do.select_asin(asin)
+                if row < 1:
+                    mysql_do.insert_asin(asin)
 
         #开始处理页面信息，写入本地文件
 
