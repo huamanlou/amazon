@@ -82,6 +82,7 @@ class AmazonSpider(scrapy.Spider):
 
     def parse(self, response):
         item = AmazonItem()
+        mysql_do = MysqlDo()
         selector = response.selector
         # 页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
@@ -91,7 +92,6 @@ class AmazonSpider(scrapy.Spider):
             products_data = json.loads(products_data)
             asin_list = products_data['ajax']['id_list']
             # 循环读取asin，查询数据库，若不存在，则插入数据库
-            mysql_do = MysqlDo()
             for asin in asin_list:
                 row = mysql_do.select_asin(asin)
                 if row < 1:
@@ -170,7 +170,7 @@ class AmazonSpider(scrapy.Spider):
         print(product_url)
         yield scrapy.Request(product_url, callback=self.parse)
 
-        mysql_do.close_conn()
+        #mysql_do.close_conn()
 
 
 
