@@ -93,8 +93,8 @@ DOWNLOADER_MIDDLEWARES = {
 
 
 
-#FEED_FORMAT = 'csv'
-#FEED_URI = u'file:///D://amazon.csv'
+FEED_FORMAT = 'csv'
+FEED_URI = 'scrapy_data.csv'
 
 RETRY_TIMES = 10
 
