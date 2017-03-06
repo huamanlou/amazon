@@ -98,7 +98,9 @@ class AmazonSpider(scrapy.Spider):
         #开始处理页面信息，写入本地文件
 
         # 标题
-        item['title'] = selector.css('span[id="productTitle"]::text').extract_first().strip()
+        title = selector.css('span[id="productTitle"]::text').extract_first()
+        if title:
+            item['title'] = title.strip()
         # asin
         asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
         item['asin'] = asin
@@ -110,8 +112,9 @@ class AmazonSpider(scrapy.Spider):
         # 卖点
         bullet_point = selector.css('div[id="feature-bullets"] .a-list-item::text').extract()
         item['bullet_point'] = ''
-        for point in bullet_point:
-            item['bullet_point'] = item['bullet_point'] + point.strip() + '\n'
+        if bullet_point:
+            for point in bullet_point:
+                item['bullet_point'] = item['bullet_point'] + point.strip() + '\n'
 
         # 是否亚马逊发货
         item['isPrime'] = ''
@@ -122,11 +125,13 @@ class AmazonSpider(scrapy.Spider):
         item['stock'] = stock
         # 评价得分，星级
         stars = selector.css('.a-declarative .a-icon-alt::text').extract_first()
-        stars = stars[:stars.index(' ')]
+        if stars:
+            stars = stars[:stars.index(' ')]
         item['stars'] = stars
         # 评价总数
         reviews = selector.css('span[id="acrCustomerReviewText"]::text').extract_first()
-        reviews = reviews[:reviews.index(' ')]
+        if reviews:
+            reviews = reviews[:reviews.index(' ')]
         item['reviews'] = reviews
         # 问题总数
         questions = selector.css('a[id="askATFLink"] .a-size-base::text').extract_first()
