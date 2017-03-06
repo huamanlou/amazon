@@ -10,7 +10,7 @@ from amazon.items import AmazonItem
 class MysqlDo:
     host = 'localhost'
     user = 'amazon'
-    passwd = 'Fuck2013!@#'
+    passwd = 'Amazon123!@#'
     db = 'amazon_us'
     charset = 'utf8'
     conn = ''
