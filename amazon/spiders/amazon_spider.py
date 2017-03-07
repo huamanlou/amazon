@@ -7,6 +7,7 @@ from amazon.items import AmazonItem
 
 
 
+#mysql数据库方法
 class MysqlDo:
     host = 'localhost'
     user = 'amazon'
@@ -21,22 +22,31 @@ class MysqlDo:
 
     def close_conn(self):
         self.conn.close()
-
+    #查找索引表
     def select_asin(self, asin):
         cursor = self.conn.cursor()
         cursor.execute("select * from t_asin where asin= '%s'" % (asin))
         row = cursor.fetchall()
         # self.conn.close()
         return len(row)
-
+    #插入索引表
     def insert_asin(self, asin):
         cursor = self.conn.cursor()
         ctime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         sql = "insert into t_asin(asin,ctime, status) value ('%s', '%s', '%d')"
         cursor.execute(sql % (asin,ctime,1))
         self.conn.commit()
-        #self.conn.close()
 
+    #标志索引表商品是亚马逊自营书籍
+    def update_asin_isbook(self, asin):
+        cursor = self.conn.cursor()
+        # 更新状态
+        sql = "update t_asin set isbook = 1 where asin = '%s'" % (asin)
+        # 执行SQL语句
+        cursor.execute(sql)
+        self.conn.commit()
+
+    #查找爬虫任务表
     def select_scrapy(self):
         cursor = self.conn.cursor()
         date = time.strftime('%Y%m%dS', time.localtime(time.time()))
@@ -52,31 +62,34 @@ class MysqlDo:
         cursor.execute(sql)
         # 提交到数据库执行
         self.conn.commit()
-
         return asin
 
-    def update_scrapy(self,asin):
+    #更新爬虫任务标志位
+    def update_scrapy(self, asin):
         cursor = self.conn.cursor()
         #更新状态
         sql = "update t_scrapy set status = 2 where asin = '%s'" % (asin)
+        print('sql')
+        print(sql)
         # 执行SQL语句
         cursor.execute(sql)
         # 提交到数据库执行
         self.conn.commit()
 
 
+
+#爬虫规则
 class AmazonSpider(scrapy.Spider):
     name = 'amazon'
     allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
+    #start_urls = ['https://www.amazon.com/dp/0578135213']
     start_urls = []
 
     def __init__(self):
-        # 从db取出一个asin进行爬取
+        #从db取出一个asin进行爬取
         mysql_do = MysqlDo()
         asin = mysql_do.select_scrapy()
-        print('=====')
-        print(asin)
         init_url = self.base_url + asin
         self.start_urls.append(init_url)
 
@@ -84,6 +97,33 @@ class AmazonSpider(scrapy.Spider):
         item = AmazonItem()
         mysql_do = MysqlDo()
         selector = response.selector
+        # asin
+        asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+        #判断是否是图书，假如是图书的话，则放弃
+        bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
+        bsr = ''.join(bsr)
+        isbook = 0
+        if bsr.find('Books') != -1:
+            isbook = 1
+
+
+        print('is book')
+        print (isbook)
+        #假如是图书，索引表作标志，并且退出，不做数据处理
+        if isbook==1:
+            #更新索引表标志
+            mysql_do.update_asin_isbook(asin)
+            # 修改状态
+            mysql_do.update_scrapy(asin)
+            #顺便塞个进程，免得第一条就碰上图书，就停了
+            next_asin = mysql_do.select_scrapy()
+            if next_asin == 0:
+                return
+            product_url = self.base_url + next_asin
+            print(product_url)
+            yield scrapy.Request(product_url, callback=self.parse)
+            return
+
         # 页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
         products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
@@ -92,10 +132,10 @@ class AmazonSpider(scrapy.Spider):
             products_data = json.loads(products_data)
             asin_list = products_data['ajax']['id_list']
             # 循环读取asin，查询数据库，若不存在，则插入数据库
-            for asin in asin_list:
-                row = mysql_do.select_asin(asin)
+            for asin_key in asin_list:
+                row = mysql_do.select_asin(asin_key)
                 if row < 1:
-                    mysql_do.insert_asin(asin)
+                    mysql_do.insert_asin(asin_key)
 
         #开始处理页面信息，写入本地文件
 
@@ -103,8 +143,7 @@ class AmazonSpider(scrapy.Spider):
         title = selector.css('span[id="productTitle"]::text').extract_first()
         if title:
             item['title'] = title.strip()
-        # asin
-        asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+
         item['asin'] = asin
         # 品牌名称
         brand = selector.css('a[id="brand"]::text').extract_first()
@@ -122,9 +161,12 @@ class AmazonSpider(scrapy.Spider):
         item['isPrime'] = ''
         # 销量
         item['sales'] = ''
+        # 分类排名
+        item['bsr'] = bsr
         # 库存
         stock = selector.css('select[id="quantity"] option:last-child::text').extract_first()
-        item['stock'] = stock
+        if stock:
+            item['stock'] = stock.strip()
         # 评价得分，星级
         stars = selector.css('.a-declarative .a-icon-alt::text').extract_first()
         if stars:
@@ -145,34 +187,28 @@ class AmazonSpider(scrapy.Spider):
         item['price'] = selector.css('span[id="priceblock_ourprice"]::text').extract_first()
         # 跟卖数量
         item['to_sell'] = ''
-
-        # print('+++++++++')
-        # print(item)
-        # print('===========')
-
         yield item
+
         #修改状态
         mysql_do.update_scrapy(asin)
 
         #开始读取下一个asin,并继续爬
-        asin = mysql_do.select_scrapy()
-        if asin==0:
+        next_asin = mysql_do.select_scrapy()
+        if next_asin == 0:
             return
-        product_url = self.base_url + asin
+        product_url = self.base_url + next_asin
         print(product_url)
         yield scrapy.Request(product_url, callback=self.parse)
 
         #这里操作两次读取，保证能多线程爬虫，不然每次都只是一个任务在执行
-        asin = mysql_do.select_scrapy()
-        if asin==0:
+        next_asin = mysql_do.select_scrapy()
+        if next_asin == 0:
             return
-        product_url = self.base_url + asin
+        product_url = self.base_url + next_asin
         print(product_url)
         yield scrapy.Request(product_url, callback=self.parse)
 
         #mysql_do.close_conn()
-
-
 
 
 '''

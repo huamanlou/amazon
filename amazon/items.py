@@ -34,3 +34,5 @@ class AmazonItem(scrapy.Item):
     price = scrapy.Field()
     #跟卖数量
     to_sell = scrapy.Field()
+    #分类销量排名
+    bsr = scrapy.Field()

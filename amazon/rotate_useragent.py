@@ -1,4 +1,5 @@
 import random
+import platform
 from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 
 
@@ -41,7 +42,9 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
             self.proxies = [ip.strip() for ip in f]
 
         proxy = 'http://{}'.format(random.choice(self.proxies))
-        print('=============')
-        print(proxy)
-        print('xxxxxxxxxxxxx')
-        request.meta['proxy'] = proxy
+        sys_name = platform.system()
+        if sys_name != 'Windows':
+            print('=============')
+            print(proxy)
+            print('xxxxxxxxxxxxx')
+            request.meta['proxy'] = proxy
