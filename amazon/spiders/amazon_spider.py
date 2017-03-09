@@ -47,30 +47,39 @@ class MysqlDo:
         self.conn.commit()
 
     #查找爬虫任务表
-    def select_scrapy(self):
+    def select_scrapy(self, num):
         cursor = self.conn.cursor()
         date = time.strftime('%Y%m%dS', time.localtime(time.time()))
-        cursor.execute("select asin from t_scrapy where date='%s' and status=0" % (date))
-        row = cursor.fetchone()
-        if row == None:
+        cursor.execute("select asin from t_scrapy where date='%s' and status=0 limit %d" % (date,num))
+        asin_rows = cursor.fetchall()
+        #这里有个坑，取出来是双层tuple,但是mysql可以执行，下面无法直接取值
+        print(asin_rows)
+        if len(asin_rows) == 0:
             return 0
 
-        asin = row[0]
-        #更新状态
-        sql = "update t_scrapy set status = 1 where asin = '%s'" % (asin)
-        # 执行SQL语句
-        cursor.execute(sql)
-        # 提交到数据库执行
-        self.conn.commit()
-        return asin
+        #todo -- 更新状态,拼接in 语句没成功，先循环处理,
+        # asin_list = ','.join(['%s'] * len(row))
+        # sql = "update t_scrapy set status = 1 where asin in (%s)" % (asin_list)
+        # # 执行SQL语句
+        # cursor.execute(sql, row)
+        # # 提交到数据库执行
+        # self.conn.commit()
+
+        for asin in asin_rows:
+            sql = "update t_scrapy set status = 1 where asin = '%s'" % (asin)
+            # 执行SQL语句
+            cursor.execute(sql)
+            # 提交到数据库执行
+            self.conn.commit()
+
+
+        return asin_rows
 
     #更新爬虫任务标志位
     def update_scrapy(self, asin):
         cursor = self.conn.cursor()
         #更新状态
         sql = "update t_scrapy set status = 2 where asin = '%s'" % (asin)
-        print('sql')
-        print(sql)
         # 执行SQL语句
         cursor.execute(sql)
         # 提交到数据库执行
@@ -89,9 +98,11 @@ class AmazonSpider(scrapy.Spider):
     def __init__(self):
         #从db取出一个asin进行爬取
         mysql_do = MysqlDo()
-        asin = mysql_do.select_scrapy()
-        init_url = self.base_url + asin
-        self.start_urls.append(init_url)
+        asin_rows = mysql_do.select_scrapy(100)
+        for asin in asin_rows:
+            print(asin[0])
+            init_url = self.base_url + asin[0]
+            self.start_urls.append(init_url)
 
     def parse(self, response):
         item = AmazonItem()
@@ -115,13 +126,6 @@ class AmazonSpider(scrapy.Spider):
             mysql_do.update_asin_isbook(asin)
             # 修改状态
             mysql_do.update_scrapy(asin)
-            #顺便塞个进程，免得第一条就碰上图书，就停了
-            next_asin = mysql_do.select_scrapy()
-            if next_asin == 0:
-                return
-            product_url = self.base_url + next_asin
-            print(product_url)
-            yield scrapy.Request(product_url, callback=self.parse)
             return
 
         # 页面抓取相关产品json数据包
@@ -187,26 +191,20 @@ class AmazonSpider(scrapy.Spider):
         item['price'] = selector.css('span[id="priceblock_ourprice"]::text').extract_first()
         # 跟卖数量
         item['to_sell'] = ''
+        item['ctime'] = time.strftime('%Y%m%dS', time.localtime(time.time()))
         yield item
 
         #修改状态
         mysql_do.update_scrapy(asin)
 
-        #开始读取下一个asin,并继续爬
-        next_asin = mysql_do.select_scrapy()
-        if next_asin == 0:
+        #继续塞进程爬
+        next_asins = mysql_do.select_scrapy(1)
+        if next_asins == 0:
             return
-        product_url = self.base_url + next_asin
-        print(product_url)
-        yield scrapy.Request(product_url, callback=self.parse)
-
-        #这里操作两次读取，保证能多线程爬虫，不然每次都只是一个任务在执行
-        next_asin = mysql_do.select_scrapy()
-        if next_asin == 0:
-            return
-        product_url = self.base_url + next_asin
-        print(product_url)
-        yield scrapy.Request(product_url, callback=self.parse)
+        for asin in next_asins:
+            product_url = self.base_url + asin[0]
+            print(product_url)
+            yield scrapy.Request(product_url, callback=self.parse)
 
         #mysql_do.close_conn()
 
