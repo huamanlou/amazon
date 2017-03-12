@@ -66,7 +66,7 @@ class MysqlDo:
         # self.conn.commit()
 
         for asin in asin_rows:
-            sql = "update t_scrapy set status = 1 where asin = '%s' and date='%s'" % (asin,date)
+            sql = "update t_scrapy set status = 1 where asin = '%s' and date='%s'" % (asin[0],date)
             # 执行SQL语句
             cursor.execute(sql)
             # 提交到数据库执行
