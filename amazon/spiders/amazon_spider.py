@@ -110,10 +110,9 @@ class AmazonSpider(scrapy.Spider):
         mysql_do = MysqlDo()
         selector = response.selector
         # asin
-        asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
-        if len(asin)<2:
-            print('asin is error')
-            return
+        #asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+        url = response.url
+        asin = url[url.rfind('/')+1:len(url)]
 
         #判断是否是图书，假如是图书的话，则放弃
         bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
