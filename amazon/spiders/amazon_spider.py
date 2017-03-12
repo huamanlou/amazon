@@ -49,8 +49,8 @@ class MysqlDo:
     #查找爬虫任务表
     def select_scrapy(self, num):
         cursor = self.conn.cursor()
-        date = time.strftime('%Y%m%dS', time.localtime(time.time()))
-        cursor.execute("select asin from t_scrapy where date='%s' and status=0 limit %d" % (date,num))
+        date = time.strftime('%Y%m%d', time.localtime(time.time()))
+        cursor.execute("select asin from t_scrapy where status=0 and date='%s' limit %d" % (date,num))
         asin_rows = cursor.fetchall()
         #这里有个坑，取出来是双层tuple,但是mysql可以执行，下面无法直接取值
         print(asin_rows)
@@ -110,6 +110,10 @@ class AmazonSpider(scrapy.Spider):
         selector = response.selector
         # asin
         asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
+        if len(asin)<2:
+            print('asin is error')
+            return
+
         #判断是否是图书，假如是图书的话，则放弃
         bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
         bsr = ''.join(bsr)
@@ -199,10 +203,9 @@ class AmazonSpider(scrapy.Spider):
         item['price'] = selector.css('span[id="priceblock_ourprice"]::text').extract_first()
         # 跟卖数量
         item['to_sell'] = ''
-        item['ctime'] = time.strftime('%Y%m%dS', time.localtime(time.time()))
+        item['ctime'] = time.strftime('%Y%m%d', time.localtime(time.time()))
         print('item')
         print(item)
-
         yield item
 
         #修改状态
