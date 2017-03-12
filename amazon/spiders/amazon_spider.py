@@ -96,7 +96,7 @@ class AmazonSpider(scrapy.Spider):
     start_urls = []
 
     def __init__(self):
-        从db取出一个asin进行爬取
+        #从db取出一个asin进行爬取
         mysql_do = MysqlDo()
         asin_rows = mysql_do.select_scrapy(1)
         for asin in asin_rows:
