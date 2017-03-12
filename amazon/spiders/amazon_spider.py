@@ -92,13 +92,13 @@ class AmazonSpider(scrapy.Spider):
     name = 'amazon'
     allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
-    #start_urls = ['https://www.amazon.com/dp/0578135213']
+    # start_urls = ['https://www.amazon.com/dp/0262513986']
     start_urls = []
 
     def __init__(self):
-        #从db取出一个asin进行爬取
+        从db取出一个asin进行爬取
         mysql_do = MysqlDo()
-        asin_rows = mysql_do.select_scrapy(100)
+        asin_rows = mysql_do.select_scrapy(1)
         for asin in asin_rows:
             print(asin[0])
             init_url = self.base_url + asin[0]
@@ -117,7 +117,6 @@ class AmazonSpider(scrapy.Spider):
         if bsr.find('Books') != -1:
             isbook = 1
 
-
         print('is book')
         print (isbook)
         #假如是图书，索引表作标志，并且退出，不做数据处理
@@ -126,6 +125,15 @@ class AmazonSpider(scrapy.Spider):
             mysql_do.update_asin_isbook(asin)
             # 修改状态
             mysql_do.update_scrapy(asin)
+            # 继续塞进程爬
+            next_asins = mysql_do.select_scrapy(1)
+            if next_asins == 0:
+                return
+            for asin in next_asins:
+                product_url = self.base_url + asin[0]
+                print(product_url)
+                yield scrapy.Request(product_url, callback=self.parse)
+
             return
 
         # 页面抓取相关产品json数据包
@@ -192,13 +200,16 @@ class AmazonSpider(scrapy.Spider):
         # 跟卖数量
         item['to_sell'] = ''
         item['ctime'] = time.strftime('%Y%m%dS', time.localtime(time.time()))
+        print('item')
+        print(item)
+
         yield item
 
         #修改状态
         mysql_do.update_scrapy(asin)
 
         #继续塞进程爬
-        next_asins = mysql_do.select_scrapy(1)
+        next_asins = mysql_do.select_scrapy(2)
         if next_asins == 0:
             return
         for asin in next_asins:
