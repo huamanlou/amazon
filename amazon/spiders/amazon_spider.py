@@ -66,7 +66,7 @@ class MysqlDo:
         # self.conn.commit()
 
         for asin in asin_rows:
-            sql = "update t_scrapy set status = 1 where asin = '%s'" % (asin)
+            sql = "update t_scrapy set status = 1 where asin = '%s' and date='%s'" % (asin,date)
             # 执行SQL语句
             cursor.execute(sql)
             # 提交到数据库执行
@@ -78,8 +78,9 @@ class MysqlDo:
     #更新爬虫任务标志位
     def update_scrapy(self, asin):
         cursor = self.conn.cursor()
+        date = time.strftime('%Y%m%d', time.localtime(time.time()))
         #更新状态
-        sql = "update t_scrapy set status = 2 where asin = '%s'" % (asin)
+        sql = "update t_scrapy set status = 2 where asin = '%s' and date='%s'" % (asin,date)
         # 执行SQL语句
         cursor.execute(sql)
         # 提交到数据库执行
