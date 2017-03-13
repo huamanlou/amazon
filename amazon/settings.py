@@ -91,7 +91,7 @@ DOWNLOADER_MIDDLEWARES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-LOG_LEVEL = 'WARNING'
+#LOG_LEVEL = 'WARNING'
 
 FEED_FORMAT = 'json'
 date = time.strftime('%Y%m%d', time.localtime(time.time()))

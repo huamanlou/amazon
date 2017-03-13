@@ -94,7 +94,7 @@ class AmazonSpider(scrapy.Spider):
     name = 'amazon'
     allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
-    # start_urls = ['https://www.amazon.com/dp/B01BLQ24IW','https://www.amazon.com/dp/B01N3092ZS?psc=1']
+    # start_urls = ['https://www.amazon.com/dp/0060001267','https://www.amazon.com/dp/B01N3092ZS?psc=1']
     start_urls = []
 
     def __init__(self):
@@ -135,7 +135,7 @@ class AmazonSpider(scrapy.Spider):
             # 修改状态
             mysql_do.update_scrapy(asin)
             # 继续塞进程爬
-            next_asins = mysql_do.select_scrapy(1)
+            next_asins = mysql_do.select_scrapy(2)
             if next_asins == 0:
                 return
             for asin in next_asins:
