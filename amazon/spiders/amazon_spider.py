@@ -3,13 +3,14 @@ import MySQLdb
 import scrapy
 import time
 import json
+from pyquery import PyQuery as pq
 from amazon.items import AmazonItem
 
 
 
 #mysql数据库方法
 class MysqlDo:
-    host = 'localhost'
+    host = '104.128.85.252'
     user = 'amazon'
     passwd = 'Amazon123!@#'
     # user = 'root'
@@ -93,7 +94,7 @@ class AmazonSpider(scrapy.Spider):
     name = 'amazon'
     allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
-    # start_urls = ['https://www.amazon.com/dp/0262513986']
+    # start_urls = ['https://www.amazon.com/dp/B01BLQ24IW','https://www.amazon.com/dp/B01N3092ZS?psc=1']
     start_urls = []
 
     def __init__(self):
@@ -108,6 +109,7 @@ class AmazonSpider(scrapy.Spider):
     def parse(self, response):
         item = AmazonItem()
         mysql_do = MysqlDo()
+        doc = pq(response.body)
         selector = response.selector
         # asin
         #asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
@@ -115,8 +117,11 @@ class AmazonSpider(scrapy.Spider):
         asin = url[url.rfind('/')+1:len(url)]
 
         #判断是否是图书，假如是图书的话，则放弃
-        bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
-        bsr = ''.join(bsr)
+        # bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
+        bsr = doc('#SalesRank ul').text()
+        #不同dom，这里结构不一样，玩具类别用下面
+        if len(bsr)<1:
+            bsr = doc('#productDetails_detailBullets_sections1 tr').eq(8).find('td').text()
         isbook = 0
         if bsr.find('Books') != -1:
             isbook = 1
@@ -142,7 +147,10 @@ class AmazonSpider(scrapy.Spider):
 
         # 页面抓取相关产品json数据包
         sim_feature = selector.css('div[id="purchase-sims-feature"]')
-        products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
+        if len(sim_feature)>0:
+            products_data = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
+        else:
+            products_data = doc('#session-sims-feature .p13n-sc-carousel').attr('data-a-carousel-options')
         print(products_data)
         if products_data:
             products_data = json.loads(products_data)
@@ -167,11 +175,16 @@ class AmazonSpider(scrapy.Spider):
             brand = brand.strip()
         item['brand'] = brand
         # 卖点
-        bullet_point = selector.css('div[id="feature-bullets"] .a-list-item::text').extract()
         item['bullet_point'] = ''
+        bullet_point = selector.css('div[id="feature-bullets"] .a-list-item::text').extract()
         if bullet_point:
             for point in bullet_point:
-                item['bullet_point'] = item['bullet_point'] + point.strip() + '\n'
+                item['bullet_point'] = item['bullet_point'] + point.strip() + '\n '
+        #页面结构不一样
+        else:
+            point_li = doc('#feature-bullets-btf li')
+            for point in point_li.items():
+                item['bullet_point'] = item['bullet_point'] + point.text() + '\n '
 
         # 是否亚马逊发货
         item['isPrime'] = ''
@@ -204,7 +217,6 @@ class AmazonSpider(scrapy.Spider):
         # 跟卖数量
         item['to_sell'] = ''
         item['ctime'] = time.strftime('%Y%m%d', time.localtime(time.time()))
-        print('item')
         print(item)
         yield item
 

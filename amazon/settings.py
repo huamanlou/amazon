@@ -8,7 +8,7 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-
+import time
 BOT_NAME = 'amazon'
 
 SPIDER_MODULES = ['amazon.spiders']
@@ -91,10 +91,12 @@ DOWNLOADER_MIDDLEWARES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
+LOG_LEVEL = 'WARNING'
 
-
-FEED_FORMAT = 'csv'
-FEED_URI = 'scrapy_data.csv'
+FEED_FORMAT = 'json'
+date = time.strftime('%Y%m%d', time.localtime(time.time()))
+hms = time.strftime('%H%M%S', time.localtime(time.time()))
+FEED_URI = 'scrapy_data_'+date+'_'+hms+'.json'
 
 RETRY_TIMES = 10
 
