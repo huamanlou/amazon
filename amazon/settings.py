@@ -99,4 +99,5 @@ hms = time.strftime('%H%M%S', time.localtime(time.time()))
 FEED_URI = 'scrapy_data_'+date+'_'+hms+'.json'
 
 RETRY_TIMES = 10
+DOWNLOAD_TIMEOUT = 120
 

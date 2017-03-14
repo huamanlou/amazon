@@ -13,6 +13,7 @@ class MysqlDo:
     host = '104.128.85.252'
     user = 'amazon'
     passwd = 'Amazon123!@#'
+    # host = 'localhost'
     # user = 'root'
     # passwd = 'fuck2013'
     db = 'amazon_us'
@@ -34,7 +35,7 @@ class MysqlDo:
     def insert_asin(self, asin):
         cursor = self.conn.cursor()
         ctime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-        sql = "insert into t_asin(asin,ctime, status) value ('%s', '%s', '%d')"
+        sql = "insert into t_asin(asin,ctime,status) value ('%s', '%s', '%d')"
         cursor.execute(sql % (asin,ctime,1))
         self.conn.commit()
 
@@ -94,7 +95,7 @@ class AmazonSpider(scrapy.Spider):
     name = 'amazon'
     allowed_domians = ['amazon.com']
     base_url = 'http://www.amazon.com/dp/'
-    # start_urls = ['https://www.amazon.com/dp/0060001267','https://www.amazon.com/dp/B01N3092ZS?psc=1']
+    # start_urls = ['https://www.amazon.com/dp/B000BQQ1P6']
     start_urls = []
 
     def __init__(self):
@@ -106,6 +107,29 @@ class AmazonSpider(scrapy.Spider):
             init_url = self.base_url + asin[0]
             self.start_urls.append(init_url)
 
+    # 判断是否是图书，假如是图书的话，则放弃
+    def isbook(self, doc):
+        #doc = pq(html)
+        # bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
+        bsr = doc('#SalesRank ul').text()
+        # 不同dom，这里结构不一样，玩具类别用下面
+        if len(bsr) < 1:
+            # bsr = doc('#productDetails_detailBullets_sections1 tr').eq(8).find('td').text()
+            bsr_td = doc('#productDetails_detailBullets_sections1 td')
+            for td in bsr_td.items():
+                td_text = td.text()
+                if td_text.find(' > ') != -1:
+                    bsr = td_text
+                    break;
+
+        isbook = 0
+        if bsr.find('Books') != -1 or bsr.find('Video Games') != -1:
+            isbook = 1
+
+        print('is book:'+str(isbook))
+        res = {'bsr':bsr,'isbook':isbook}
+        return res
+
     def parse(self, response):
         item = AmazonItem()
         mysql_do = MysqlDo()
@@ -116,18 +140,9 @@ class AmazonSpider(scrapy.Spider):
         url = response.url
         asin = url[url.rfind('/')+1:len(url)]
 
-        #判断是否是图书，假如是图书的话，则放弃
-        # bsr = selector.xpath('//*[@id="SalesRank"]/ul//text()').extract()
-        bsr = doc('#SalesRank ul').text()
-        #不同dom，这里结构不一样，玩具类别用下面
-        if len(bsr)<1:
-            bsr = doc('#productDetails_detailBullets_sections1 tr').eq(8).find('td').text()
-        isbook = 0
-        if bsr.find('Books') != -1:
-            isbook = 1
-
-        print('is book')
-        print (isbook)
+        res = self.isbook(doc)
+        isbook = res['isbook']
+        bsr = res['bsr']
         #假如是图书，索引表作标志，并且退出，不做数据处理
         if isbook==1:
             #更新索引表标志
