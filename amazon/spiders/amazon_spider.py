@@ -13,11 +13,12 @@ class AmazonSpider(scrapy.Spider):
     base_url = 'http://www.amazon.com/dp/'
     # start_urls = ['https://www.amazon.com/dp/B00008DFOM']
     start_urls = []
+    mysql_do = ''
 
     def __init__(self):
         #从db取出一个asin进行爬取
-        mysql_do = MysqlDo()
-        asin_rows = mysql_do.select_scrapy(1)
+        self.mysql_do = MysqlDo()
+        asin_rows = self.mysql_do.select_scrapy(1)
         for asin in asin_rows:
             init_url = self.base_url + asin[0]
             self.start_urls.append(init_url)
@@ -25,7 +26,7 @@ class AmazonSpider(scrapy.Spider):
 
     def parse(self, response):
         item = AmazonItem()
-        mysql_do = MysqlDo()
+        # mysql_do = MysqlDo()
         html_deal = HtmlDeal(response)
         # asin
         #asin = selector.css('input[id="ASIN"]::attr(value)').extract_first()
@@ -40,11 +41,11 @@ class AmazonSpider(scrapy.Spider):
         #假如是图书，索引表作标志，并且退出，不做数据处理
         if isbook==1:
             #更新索引表标志
-            mysql_do.update_asin_isbook(asin)
+            self.mysql_do.update_asin_isbook(asin)
             # 修改状态
-            mysql_do.update_scrapy(asin)
+            self.mysql_do.update_scrapy(asin)
             # 继续塞进程爬
-            next_asins = mysql_do.select_scrapy(2)
+            next_asins = self.mysql_do.select_scrapy(1)
             if next_asins == 0:
                 return
             for asin in next_asins:
@@ -61,16 +62,16 @@ class AmazonSpider(scrapy.Spider):
         if len(customer_product_list)>0:
             # 循环读取asin，查询数据库，若不存在，则插入数据库
             for asin_key in customer_product_list:
-                row = mysql_do.select_asin(asin_key)
+                row = self.mysql_do.select_asin(asin_key)
                 if row < 1:
-                    mysql_do.insert_asin(asin_key)
+                    self.mysql_do.insert_asin(asin_key)
 
         if len(sponsored_product_list)>0:
             # 循环读取asin，查询数据库，若不存在，则插入数据库
             for asin_key in sponsored_product_list:
-                row = mysql_do.select_asin(asin_key)
+                row = self.mysql_do.select_asin(asin_key)
                 if row < 1:
-                    mysql_do.insert_asin(asin_key)
+                    self.mysql_do.insert_asin(asin_key)
 
 
         item = html_deal.get_items()
@@ -81,10 +82,17 @@ class AmazonSpider(scrapy.Spider):
         print item
         yield item
         #修改状态
-        mysql_do.update_scrapy(asin)
+        self.mysql_do.update_scrapy(asin)
 
         #继续塞进程爬
-        next_asins = mysql_do.select_scrapy(2)
+        #查看队列长度，超过固定数目，则不再塞队列，防止内存溢出
+        request_list = self.mysql_do.count_scrapy()
+        print('request_list')
+        print request_list
+        if request_list > 3:
+            return
+
+        next_asins = self.mysql_do.select_scrapy(2)
         if next_asins == 0:
             return
         for asin in next_asins:
@@ -92,4 +100,3 @@ class AmazonSpider(scrapy.Spider):
             print(product_url)
             yield scrapy.Request(product_url, callback=self.parse)
 
-        #mysql_do.close_conn()

@@ -73,6 +73,14 @@ class MysqlDo:
             self.conn.commit()
 
         return asin_rows
+    #查询爬虫队列现在还有多少
+    def count_scrapy(self):
+        cursor = self.conn.cursor()
+        date = time.strftime('%Y%m%d', time.localtime(time.time()))
+        query = "select * from t_scrapy where status=1 and date='%s'" % (date)
+        cursor.execute(query)
+        row_num = cursor.rowcount
+        return row_num
 
     #更新爬虫任务标志位
     def update_scrapy(self, asin):

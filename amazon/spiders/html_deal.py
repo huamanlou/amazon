@@ -43,7 +43,6 @@ class HtmlDeal:
             customer_product = sim_feature.css('div::attr(data-a-carousel-options)').extract_first()
         else:
             customer_product = self.doc('#session-sims-feature .p13n-sc-carousel').attr('data-a-carousel-options')
-        print(customer_product)
         customer_product_list = []
         if customer_product:
             customer_product = json.loads(customer_product)
