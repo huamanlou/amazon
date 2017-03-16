@@ -45,12 +45,12 @@ class AmazonSpider(scrapy.Spider):
             # 修改状态
             self.mysql_do.update_scrapy(asin)
             # 继续塞进程爬
-            next_asins = self.mysql_do.select_scrapy(1)
-            if next_asins == 0:
-                return
-            for asin in next_asins:
-                product_url = self.base_url + asin[0]
-                yield scrapy.Request(product_url, callback=self.parse)
+            # next_asins = self.mysql_do.select_scrapy(1)
+            # if next_asins == 0:
+            #     return
+            # for asin in next_asins:
+            #     product_url = self.base_url + asin[0]
+            #     yield scrapy.Request(product_url, callback=self.parse)
 
             return
 
@@ -99,4 +99,3 @@ class AmazonSpider(scrapy.Spider):
             product_url = self.base_url + asin[0]
             print(product_url)
             yield scrapy.Request(product_url, callback=self.parse)
-

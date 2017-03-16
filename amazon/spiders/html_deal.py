@@ -49,13 +49,19 @@ class HtmlDeal:
             customer_product_list = customer_product['ajax']['id_list']
 
         # 页面抓取广告产品json数据包
-        sponsored_product = self.doc('#sponsored-products-dp_feature_div #sp_detail').attr('data-a-carousel-options')
+        sponsored_product = self.doc('#sponsoredProducts_feature_div #sp_detail').attr('data-a-carousel-options')
         sponsored_product_list = []
         if sponsored_product:
             sponsored_product = json.loads(sponsored_product)
             sponsored_product_list = sponsored_product['initialSeenAsins'].split(',')
 
-        res = {'customer_product_list': customer_product_list, 'sponsored_product_list': sponsored_product_list}
+        new_sponsored_product_list = []
+        #广告商品id居然带有”，这里是个坑，得过滤掉
+        for asin in sponsored_product_list:
+            new_asin = asin.replace('"', '')
+            new_sponsored_product_list.append(new_asin)
+
+        res = {'customer_product_list': customer_product_list, 'sponsored_product_list': new_sponsored_product_list}
         return res
 
     def get_items(self):
