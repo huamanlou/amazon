@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import scrapy
-
+import time
 # from pyquery import PyQuery as pq
 from amazon.items import AmazonItem
 from mysql_do import MysqlDo
@@ -25,6 +25,15 @@ class AmazonSpider(scrapy.Spider):
 
 
     def parse(self, response):
+        #返回值异常，写日记
+        if response.status != 200:
+            w_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+            f = file('error_status.log', 'a+')
+            status_text = response.url+'||'+str(response.status)+'||'+w_time+'\n'
+            f.write(status_text)
+            f.close()
+            return
+
         item = AmazonItem()
         # mysql_do = MysqlDo()
         html_deal = HtmlDeal(response)
