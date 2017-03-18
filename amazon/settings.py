@@ -93,10 +93,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 #LOG_LEVEL = 'WARNING'
 
-FEED_FORMAT = 'json'
+FEED_FORMAT = 'csv'
 date = time.strftime('%Y%m%d', time.localtime(time.time()))
 hms = time.strftime('%H%M%S', time.localtime(time.time()))
-FEED_URI = 'scrapy_data_'+date+'_'+hms+'.json'
+FEED_URI = 'scrapy_data_'+date+'_'+hms+'.csv'
 
 RETRY_TIMES = 10
 DOWNLOAD_TIMEOUT = 120
