@@ -98,7 +98,7 @@ class AmazonSpider(scrapy.Spider):
         request_list = self.mysql_do.count_scrapy()
         print('request_list')
         print request_list
-        if request_list > 20000:
+        if request_list > 12000:
             return
 
         next_asins = self.mysql_do.select_scrapy(2)
