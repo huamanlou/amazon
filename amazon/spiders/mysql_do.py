@@ -51,7 +51,9 @@ class MysqlDo:
     def select_scrapy(self, num):
         cursor = self.conn.cursor()
         date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        cursor.execute("select asin from t_scrapy where status=0 and date='%s' limit %d" % (date,num))
+        #暂时不限制时间
+        #cursor.execute("select asin from t_scrapy where status=0 and date='%s' limit %d" % (date,num))
+        cursor.execute("select asin from t_scrapy where status=0 limit %d" % (num))
         asin_rows = cursor.fetchall()
         #这里有个坑，取出来是双层tuple,但是mysql可以执行，下面无法直接取值
         if len(asin_rows) == 0:
@@ -66,7 +68,8 @@ class MysqlDo:
         # self.conn.commit()
 
         for asin in asin_rows:
-            sql = "update t_scrapy set status = 1 where asin = '%s' and date='%s'" % (asin[0],date)
+            #sql = "update t_scrapy set status = 1 where asin = '%s' and date='%s'" % (asin[0],date)
+            sql = "update t_scrapy set status = 1 where asin = '%s'" % (asin[0])
             # 执行SQL语句
             cursor.execute(sql)
             # 提交到数据库执行
@@ -77,7 +80,8 @@ class MysqlDo:
     def count_scrapy(self):
         cursor = self.conn.cursor()
         date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        query = "select * from t_scrapy where status=1 and date='%s'" % (date)
+        # query = "select * from t_scrapy where status=1 and date='%s'" % (date)
+        query = "select * from t_scrapy where status=1"
         cursor.execute(query)
         row_num = cursor.rowcount
         return row_num
@@ -87,7 +91,7 @@ class MysqlDo:
         cursor = self.conn.cursor()
         date = time.strftime('%Y%m%d', time.localtime(time.time()))
         #更新状态
-        sql = "update t_scrapy set status = 2 where asin = '%s' and date='%s'" % (asin,date)
+        sql = "update t_scrapy set status = 2 where asin = '%s'" % (asin)
         # 执行SQL语句
         cursor.execute(sql)
         # 提交到数据库执行
